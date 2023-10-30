@@ -1,0 +1,46 @@
+!git clone https://github.com/ultralytics/yolov5
+%cd yolov5
+%pip install -qr requirements.txt
+
+%mkdir /content/dataset
+%cd /content/dataset
+
+# 데이터셋 다운
+!curl -L "https://universe.roboflow.com/ds/ZLWQzY16en?key=63hCSDrcSa" > roboflow.zip; unzip roboflow.zip; rm roboflow.zip
+
+%cd /content/yolov5
+
+import yaml
+
+with open("/content/dataset/data.yaml", 'r') as f:
+  data = yaml.load(f, Loader=yaml.FullLoader)
+
+data['train'] = "/content/dataset/"
+data['test'] = "/content/dataset/"
+data['val'] = "/content/dataset/"
+
+with open("/content/dataset/data.yaml", 'w') as f:
+  yaml.dump(data, f)
+
+%cd /content/yolov5
+
+!python train.py --data "/content/dataset/data.yaml" --epochs 30 --batch 16
+
+!python val.py --data "/content/dataset/data.yaml" --weights "/content/yolov5/runs/train/exp/weights/best.pt"
+
+!python detect.py --weights "/content/yolov5/runs/train/exp/weights/best.pt" --source "/content/dataset/test/images/"
+
+import cv2
+import matplotlib.pyplot as plt
+from glob import glob
+
+img_paths = glob("runs/detect/exp/*")
+
+plt.figure(figsize=(16, 10))
+plt.subplot(1,3,1)
+plt.imshow(cv2.imread(img_paths[0]))
+plt.subplot(1,3,2)
+plt.imshow(cv2.imread(img_paths[1]))
+plt.subplot(1,3,3)
+plt.imshow(cv2.imread(img_paths[2]))
+plt.show()
